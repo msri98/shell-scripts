@@ -1,0 +1,3 @@
+MQ_MSG_PARTITION=/raw/claims/dmih/2023/10/29/99
+TR_SOURCE="/raw/claims/dmih"
+TR_OUT="/prod/gold/claims/ICC/"
