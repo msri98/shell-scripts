@@ -1,0 +1,32 @@
+import os
+import sys
+import pyspark
+
+from pyspark.sql import SparkSession
+
+spark = (SparkSession.builder.
+            config('spark.yarn.keytab', '/dbfs/FileStore/hcm/keytabs/a6721026_Dev.keytab'). 
+            config('spark.yarn.principal', 'a6721026@ADHCSCDEV.NET').
+            config('spark.driver.extraJavaOptions', '-Djava.security.krb5.conf=/dbfs/FileStore/hcm/jks/krb5.conf').
+            config('spark.executor.extraJavaOptions', '-Djava.security.krb5.conf=/dbfs/FileStore/hcm/jks/krb5.conf').appName('KafkaSpark').getOrCreate()
+        )
+confluentBootstrapServers = "daznslclkap02.app.dev.hcscint.net:9093,daznslclkap03.app.dev.hcscint.net:9093,daznslclkap04.app.dev.hcscint.net:9093"
+
+kafka_df=(spark.readStream.format("kafka")
+                    .option("kafka.bootstrap.servers", confluentBootstrapServers)
+                    .option("kafka.security.protocol", "SASL_SSL")
+                    .option("kafka.sasl.jaas.config",  
+                            "com.sun.security.auth.module.Krb5LoginModule required doNotPrompt=true useTicketCache=false principal='a6721026@ADHCSCDEV.NET' useKeyTab=true serviceName='cp-kafka' keyTab='/dbfs/FileStore/hcm/keytabs/a6721026_Dev.keytab' storeKey=true client=true;")
+                    .option("kafka.security.protocol", "SASL_SSL")
+                    .option("subscribe", "DAS_HCM_PAYI_CMDM")
+                    .option("includeHeaders", "true")
+                    .option("kafka.sasl.kerberos.service.name", "cp-kafka")
+                    .option("kafka.sasl.mechanism", "GSSAPI")
+                    .option("kafka.ssl.trustStore.location", "/dbfs/FileStore/hcm/jks/kafka_truststore_dev.jks")
+                    .option("kafka.ssl.trustStore.password", "confluenttruststorepass")
+                    .option("kafka.group.id", "HCSC_DAS_HCM_CONS")
+                    .option("auto.offset.reset", "earliest")
+                    .load()
+                    )
+
+display(kafka_df)

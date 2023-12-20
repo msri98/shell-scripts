@@ -1,0 +1,31 @@
+import pyspark.sql.functions as fn
+from pyspark.sql.functions import col,struct,to_json
+from pyspark.sql.types import StructField, StructType, StringType, MapType
+
+dataDictionary = [
+( "James","driver"),
+("Michael","teacher"),
+("Robert","engineer"),
+("Washington","architect"),
+("Jefferson","CEO")
+]
+
+#df = spark.createDataFrame(data=dataDictionary, schema = ["name","description"])
+df = spark.createDataFrame(data=dataDictionary, schema = ["key","value"])
+
+#(df.select("name AS Key","to_json(struct(*)) as value")
+(df.select(col("key"),col("value"))
+   .write.format("kafka") 
+   .option("kafka.bootstrap.servers","daznslclkap02.app.dev.hcscint.net:9093,daznslclkap03.app.dev.hcscint.net:9093,daznslclkap04.app.dev.hcscint.net:9093")
+   .option("topic", "DAS_HCM_PAYI_CMDM")
+   .option("kafka.sasl.jaas.config", """com.sun.security.auth.module.Krb5LoginModule required doNotPrompt=true useTicketCache=false principal='a6721026@ADHCSCDEV.NET' useKeyTab=true  keyTab='/dbfs/FileStore/hcm/keytabs/a6721026_Dev.keytab' storeKey=true client=true;""") 
+  .option("kafka.security.protocol","SASL_SSL") 
+  .option("kafka.sasl.mechanism","GSSAPI") 
+  .option("client.dns.lookup","use_all_dns_ips") 
+  .option("kafka.sasl.kerberos.service.name", "cp-kafka") 
+  .option("kafka.ssl.trustStore.location", "/dbfs/FileStore/hcm/jks/kafka_truststore_dev.jks")
+  .option("kafka.ssl.trustStore.password","confluenttruststorepass") 
+  .option("kafka.group.id", "HCSC_DAS_HCM_CONS") 
+  .option("failOnDataLoss", "false") 
+   .save()
+)
